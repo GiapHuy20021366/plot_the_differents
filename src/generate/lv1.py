@@ -3,6 +3,8 @@ from setup.constrants import *
 from generate.untils import *
 
 
+# Simple replace by random color
+
 def lv1_generate(opencv_img, num_range):
     shape = opencv_img.shape
     width, height = shape[1], shape[0]

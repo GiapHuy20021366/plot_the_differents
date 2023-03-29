@@ -4,18 +4,21 @@ from untils.diff_rects import *
 from untils.translate import *
 from generate.lv1 import *
 from generate.lv2 import *
+from generate.lv3 import *
 from components.Button import *
 import cv2
 
 # Images
-IMG1 = "src/images/city1.jpg"
+IMG1 = "src/images/1.png"
 IMG2 = "src/images/city2.jpg"
 
 # Load images
 img1 = cv2.imread(IMG1)
 img1 = cv2.resize(img1, get_new_size(600, 400, img1.shape[1], img1.shape[0]))
 # img2 = cv2.imread(IMG2)
-img2, differents = lv2_generate(img1, 9)
+img2, differents = lv3_generate(img1, 9)
+
+subtract_img = img1 - img2
 
 # Init detecter
 # detecter = SubtractDetecter(img1, img2)
@@ -38,6 +41,7 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 img1_screen = covert_opencv_img_to_pygame(img1)
 img2_screen = covert_opencv_img_to_pygame(img2)
+img_sub_screen = covert_opencv_img_to_pygame(subtract_img)
 
 
 def print_all_differents():
@@ -49,6 +53,12 @@ def print_all_differents():
         pygame.draw.rect(screen, COLOR_RED,
                          pygame.Rect(trans_rect),  2)
 
+    pygame.display.flip()
+
+
+def draw_subtract_images():
+    screen.blit(img_sub_screen, (0, 0))
+    screen.blit(img_sub_screen, (IMAGE_WIDTH + PADDING, 0))
     pygame.display.flip()
 
 
@@ -107,12 +117,14 @@ status = {
     "Total True": 0,
     "IsChanged": False,
     "IsPrintDifferent": False,
-    "Logs": True
+    "Logs": False,
+    "IsPrintSubtract": False
 }
 
 font = pygame.font.SysFont("Arial", 20)
 btn_show = Button("Show", (IMAGE_WIDTH, 0), 20, feedback="Hide")
 btn_clear = Button("Clear", (IMAGE_WIDTH, 50), 20, feedback="Clear")
+btn_subtract = Button("Subtract", (IMAGE_WIDTH, 100), 20, feedback="Subtract")
 
 
 def draw_text(text, pos):
@@ -128,12 +140,14 @@ def draw_mid():
                      pygame.Rect(IMAGE_WIDTH, 0, PADDING, IMAGE_HEIGHT))
     btn_show.show(screen)
     btn_clear.show(screen)
+    btn_subtract.show(screen)
+
     draw_text("Total: {}".format(
-        status["Total Different"]), (IMAGE_WIDTH, 100))
+        status["Total Different"]), (IMAGE_WIDTH, 150))
     draw_text("True:  {}".format(
-        status["Total True"]), (IMAGE_WIDTH, 150))
+        status["Total True"]), (IMAGE_WIDTH, 200))
     draw_text("Fail:  {}".format(
-        status["Total Fail"]), (IMAGE_WIDTH, 200))
+        status["Total Fail"]), (IMAGE_WIDTH, 250))
     pygame.display.flip()
 
 
@@ -149,6 +163,11 @@ def btn_clear_callback():
     status["IsChanged"] = True
 
 
+def btn_subtract_callback():
+    status["IsPrintSubtract"] = not status["IsPrintSubtract"]
+    status["IsChanged"] = True
+
+
 draw_mid()
 
 # Game loop
@@ -156,6 +175,8 @@ running = True
 while running:
     if status["IsChanged"]:
         draw_images()
+        if status["IsPrintSubtract"]:
+            draw_subtract_images()
         draw_fail_ranges(fail_ranges)
         draw_true_ranges(true_ranges)
         status["IsChanged"] = False
@@ -173,6 +194,7 @@ while running:
         # Btn event loader
         btn_show.click(event, btn_show_callback)
         btn_clear.click(event, btn_clear_callback)
+        btn_subtract.click(event, btn_subtract_callback)
 
         # User event to draw fail click range
         if event.type == pygame.USEREVENT:

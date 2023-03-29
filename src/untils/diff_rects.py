@@ -20,6 +20,10 @@ def calc_ssim(img1, img2, rect):
     x, y, w, h = rect
     rect1 = img1[y:y+h, x:x+w]
     rect2 = img2[y:y+h, x:x+w]
+    return inner_ssim(rect1, rect2)
+
+
+def inner_ssim(rect1, rect2):
     gray1 = cv2.cvtColor(rect1, cv2.COLOR_BGR2GRAY)
     gray2 = cv2.cvtColor(rect2, cv2.COLOR_BGR2GRAY)
     score, diff = ssim(gray1, gray2, full=True)

@@ -1,6 +1,7 @@
 import random
 import numpy as np
 from setup.constrants import *
+from untils.diff_rects import *
 
 
 def rand_poses(max_x, max_y, count):
@@ -10,6 +11,17 @@ def rand_poses(max_x, max_y, count):
         y = random.randint(1, max_y)
         rands.append((x, y))
     return rands
+
+
+def replace_range(origin_img, range_r, start_pos):
+    start_x, start_y = start_pos
+    range_x = range_r.shape[0]
+    range_y = range_r.shape[1]
+    # print(start_x, start_y, range_x, range_y)
+    for x in range(start_x, start_x + range_x):
+        for y in range(start_y, start_y + range_y):
+            origin_img[x][y] = range_r[x - start_x][y - start_y]
+    return origin_img
 
 
 def square_distance(point1, point2):
@@ -26,6 +38,8 @@ def rally_max_distance(cur_rally, choose_rally):
     max_index = np.argmax(distances)
     point_max = choose_rally[max_index]
     return point_max, distances[max_index], max_index
+
+# Remove all range that much similar or different from origin
 
 
 def generate_rally(max_random, max_x, max_y, num_choose, start_index=0):
