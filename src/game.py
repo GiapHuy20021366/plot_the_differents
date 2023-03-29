@@ -8,24 +8,24 @@ from components.Button import *
 import cv2
 
 # Images
-IMG1 = "src/images/camels1.jpg"
+IMG1 = "src/images/city1.jpg"
 IMG2 = "src/images/city2.jpg"
 
 # Load images
 img1 = cv2.imread(IMG1)
 img1 = cv2.resize(img1, get_new_size(600, 400, img1.shape[1], img1.shape[0]))
 # img2 = cv2.imread(IMG2)
-img2 = lv2_generate(img1, 9)
+img2, differents = lv2_generate(img1, 9)
 
 # Init detecter
-detecter = SubtractDetecter(img1, img2)
-differents = detecter.differents
-SSIMs = detecter.get_SSIMs()
-print(SSIMs)
+# detecter = SubtractDetecter(img1, img2)
+# differents = detecter.differents
+# SSIMs = detecter.get_SSIMs()
+# print(SSIMs)
 
-size = detecter.get_size()
-IMAGE_WIDTH = size[0]
-IMAGE_HEIGHT = size[1]
+# size = img1.shape[:2]
+IMAGE_WIDTH = img1.shape[1]
+IMAGE_HEIGHT = img1.shape[0]
 SCREEN_WIDTH = IMAGE_WIDTH * 2 + PADDING
 SCREEN_HEIGHT = IMAGE_HEIGHT
 
@@ -36,8 +36,8 @@ pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 
-img1_screen = covert_opencv_img_to_pygame(detecter.img1)
-img2_screen = covert_opencv_img_to_pygame(detecter.img2)
+img1_screen = covert_opencv_img_to_pygame(img1)
+img2_screen = covert_opencv_img_to_pygame(img2)
 
 
 def print_all_differents():
@@ -111,7 +111,8 @@ status = {
 }
 
 font = pygame.font.SysFont("Arial", 20)
-btn = Button("Show", (IMAGE_WIDTH, 0), 20, feedback="Hide")
+btn_show = Button("Show", (IMAGE_WIDTH, 0), 20, feedback="Hide")
+btn_clear = Button("Clear", (IMAGE_WIDTH, 50), 20, feedback="Clear")
 
 
 def draw_text(text, pos):
@@ -125,7 +126,8 @@ def draw_text(text, pos):
 def draw_mid():
     pygame.draw.rect(screen, COLOR_BLACK,
                      pygame.Rect(IMAGE_WIDTH, 0, PADDING, IMAGE_HEIGHT))
-    btn.show(screen)
+    btn_show.show(screen)
+    btn_clear.show(screen)
     draw_text("Total: {}".format(
         status["Total Different"]), (IMAGE_WIDTH, 100))
     draw_text("True:  {}".format(
@@ -135,8 +137,15 @@ def draw_mid():
     pygame.display.flip()
 
 
-def btn_callback():
+def btn_show_callback():
     status["IsPrintDifferent"] = not status["IsPrintDifferent"]
+    status["IsChanged"] = True
+
+
+def btn_clear_callback():
+    status["Total True"] = 0
+    status["Total Fail"] = 0
+    true_ranges.clear()
     status["IsChanged"] = True
 
 
@@ -162,7 +171,8 @@ while running:
             running = False
 
         # Btn event loader
-        btn.click(event, btn_callback)
+        btn_show.click(event, btn_show_callback)
+        btn_clear.click(event, btn_clear_callback)
 
         # User event to draw fail click range
         if event.type == pygame.USEREVENT:
@@ -185,7 +195,7 @@ while running:
             range_clicked = get_clicked_range(differents, origin_pos)
             if range_clicked is not None:
                 ssim_score, _ = calc_ssim(
-                    detecter.img1, detecter.img2, range_clicked)
+                    img1, img2, range_clicked)
                 print(ssim_score)
                 if not is_choosed_range(true_ranges, origin_pos):
                     true_ranges.append(range_clicked)
