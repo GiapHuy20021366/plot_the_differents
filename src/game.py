@@ -20,7 +20,7 @@ img2 = lv2_generate(img1, 9)
 # Init detecter
 detecter = SubtractDetecter(img1, img2)
 differents = detecter.differents
-SSIMs = detecter.get_SSIM()
+SSIMs = detecter.get_SSIMs()
 print(SSIMs)
 
 size = detecter.get_size()
@@ -42,8 +42,13 @@ img2_screen = covert_opencv_img_to_pygame(detecter.img2)
 
 def print_all_differents():
     for dif in differents:
+        trans_rect = get_transform_range(
+            dif, IMAGE_WIDTH, PADDING)
         pygame.draw.rect(screen, COLOR_RED,
                          pygame.Rect(dif),  2)
+        pygame.draw.rect(screen, COLOR_RED,
+                         pygame.Rect(trans_rect),  2)
+
     pygame.display.flip()
 
 
@@ -109,10 +114,24 @@ font = pygame.font.SysFont("Arial", 20)
 btn = Button("Show", (IMAGE_WIDTH, 0), 20, feedback="Hide")
 
 
+def draw_text(text, pos):
+    text = font.render(text, 1, COLOR_WHITE)
+    text_rect = text.get_rect()
+    text_rect.topleft = pos
+    screen.blit(text, text_rect)
+    pygame.display.flip()
+
+
 def draw_mid():
     pygame.draw.rect(screen, COLOR_BLACK,
-                     pygame.Rect(IMAGE_WIDTH, 0, PADDING, IMAGE_HEIGHT),  2)
+                     pygame.Rect(IMAGE_WIDTH, 0, PADDING, IMAGE_HEIGHT))
     btn.show(screen)
+    draw_text("Total: {}".format(
+        status["Total Different"]), (IMAGE_WIDTH, 100))
+    draw_text("True:  {}".format(
+        status["Total True"]), (IMAGE_WIDTH, 150))
+    draw_text("Fail:  {}".format(
+        status["Total Fail"]), (IMAGE_WIDTH, 200))
     pygame.display.flip()
 
 
@@ -165,6 +184,9 @@ while running:
             trans_pos = get_trans_pos(origin_pos, IMAGE_WIDTH, PADDING)
             range_clicked = get_clicked_range(differents, origin_pos)
             if range_clicked is not None:
+                ssim_score, _ = calc_ssim(
+                    detecter.img1, detecter.img2, range_clicked)
+                print(ssim_score)
                 if not is_choosed_range(true_ranges, origin_pos):
                     true_ranges.append(range_clicked)
                     status["Total True"] += 1

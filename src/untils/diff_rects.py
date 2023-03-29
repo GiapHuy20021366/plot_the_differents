@@ -16,6 +16,17 @@ def get_new_size(max_width, max_height, img_width, img_height):
     return new_width, new_height
 
 
+def calc_ssim(img1, img2, rect):
+    x, y, w, h = rect
+    rect1 = img1[y:y+h, x:x+w]
+    rect2 = img2[y:y+h, x:x+w]
+    gray1 = cv2.cvtColor(rect1, cv2.COLOR_BGR2GRAY)
+    gray2 = cv2.cvtColor(rect2, cv2.COLOR_BGR2GRAY)
+    score, diff = ssim(gray1, gray2, full=True)
+    diff = (diff * 255).astype("uint8")
+    return score, diff
+
+
 class SSIMDetecter:
     def __init__(self, opencv_img1, opencv_img2, max_width=600, max_height=400) -> None:
         self.img1 = opencv_img1
@@ -99,16 +110,10 @@ class SubtractDetecter:
         self.ssim_detecter = SSIMDetecter(sub_img, black_img)
         return self.ssim_detecter.get_differents()
 
-    def get_SSIM(self):
+    def get_SSIMs(self):
         ssimes = []
         for rect in self.differents:
-            x, y, w, h = rect
-            rect1 = self.img1[y:y+h, x:x+w]
-            rect2 = self.img2[y:y+h, x:x+w]
-            gray1 = cv2.cvtColor(rect1, cv2.COLOR_BGR2GRAY)
-            gray2 = cv2.cvtColor(rect2, cv2.COLOR_BGR2GRAY)
-            score, diff = ssim(gray1, gray2, full=True)
-            diff = (diff * 255).astype("uint8")
+            score, diff = calc_ssim(self.img1, self.img2, rect)
             ssimes.append(score)
         return ssimes
 
