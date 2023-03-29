@@ -4,6 +4,7 @@ from untils.diff_rects import *
 from untils.translate import *
 from generate.lv1 import *
 from generate.lv2 import *
+from components.Button import *
 import cv2
 
 # Images
@@ -104,6 +105,23 @@ status = {
     "Logs": True
 }
 
+font = pygame.font.SysFont("Arial", 20)
+btn = Button("Show", (IMAGE_WIDTH, 0), 20, feedback="Hide")
+
+
+def draw_mid():
+    pygame.draw.rect(screen, COLOR_BLACK,
+                     pygame.Rect(IMAGE_WIDTH, 0, PADDING, IMAGE_HEIGHT),  2)
+    btn.show(screen)
+    pygame.display.flip()
+
+
+def btn_callback():
+    status["IsPrintDifferent"] = not status["IsPrintDifferent"]
+    status["IsChanged"] = True
+
+
+draw_mid()
 
 # Game loop
 running = True
@@ -117,11 +135,15 @@ while running:
             print_all_differents()
         if status["Logs"]:
             print(status)
+        draw_mid()
 
     # Handle events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        # Btn event loader
+        btn.click(event, btn_callback)
 
         # User event to draw fail click range
         if event.type == pygame.USEREVENT:
@@ -134,7 +156,12 @@ while running:
         # Event handle click event
         if event.type == pygame.MOUSEBUTTONUP:
             pos = pygame.mouse.get_pos()
-            origin_pos, _ = get_click_pos_origin(pos, IMAGE_WIDTH, PADDING)
+            origin_pos, is_click_padding = get_click_pos_origin(
+                pos, IMAGE_WIDTH, PADDING)
+            # Click padding
+            if is_click_padding:
+                continue
+
             trans_pos = get_trans_pos(origin_pos, IMAGE_WIDTH, PADDING)
             range_clicked = get_clicked_range(differents, origin_pos)
             if range_clicked is not None:
