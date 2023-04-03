@@ -1,30 +1,70 @@
 import pygame
-from setup.constrants import *
-from untils.diff_rects import *
-from untils.translate import *
-from generate.lv1 import *
-from generate.lv2 import *
-from generate.lv3 import *
+from setup.constants import *
+from utils.game_tools import *
+from task1.lv1 import *
+from task1.lv2 import *
+from task1.lv3 import *
+from task1.lv4 import *
 from components.Button import *
+from task2.find_diff import *
 import cv2
+from utils.task1_tools import *
+from task1 import Levels
 
-# Images
+# setup levels
+level_setups = {
+    Levels.CHANGE_RECT_COLOR: {
+        "diff_style": "rect",
+        "strict_mode": False,
+        "generator": change_rect_color
+    },
+    Levels.FLIP_RECT: {
+        "diff_style": "rect",
+        "strict_mode": False,
+        "generator": flip_rect
+    },
+    Levels.CHANGE_EDGES_COLOR: {
+        "diff_style": "rect",
+        "strict_mode": False,
+        "generator": change_edges_color
+    },
+    Levels.CHANGE_COLOR_REGIONS: {
+        "diff_style": "edges",
+        "strict_mode": True,
+        "generator": change_color_regions
+    },
+    Levels.ERASE_REGIONS: {
+        "diff_style": "edges",
+        "strict_mode": True,
+        "generator": erase_regions
+    }
+}
+
+# Choose game level
+GAME_LEVEL = Levels.CHANGE_COLOR_REGIONS
+
+# Generator
+image_generator = level_setups[GAME_LEVEL]["generator"]
+
+# Image path
 IMG1 = "src/images/1.png"
-IMG2 = "src/images/city2.jpg"
 
-# Load images
+# Load image
 img1 = cv2.imread(IMG1)
 img1 = cv2.resize(img1, get_new_size(600, 400, img1.shape[1], img1.shape[0]))
-# img2 = cv2.imread(IMG2)
-img2, differents = lv3_generate(img1, 9)
 
-subtract_img = img1 - img2
+# Generate second image
+img2 = image_generator(img1, 9)
 
-# Init detecter
-# detecter = SubtractDetecter(img1, img2)
-# differents = detecter.differents
-# SSIMs = detecter.get_SSIMs()
-# print(SSIMs)
+
+candy_img = cv2.Canny(img1, 100, 200)
+
+trans_candy_img = transform_candy(candy_img)
+# candy_img = transform_candy(candy_img)
+
+# Detect all different regions
+subtract_img, diff_regions = detect_differences(img1, img2)
+
 
 # size = img1.shape[:2]
 IMAGE_WIDTH = img1.shape[1]
@@ -43,29 +83,10 @@ img1_screen = covert_opencv_img_to_pygame(img1)
 img2_screen = covert_opencv_img_to_pygame(img2)
 img_sub_screen = covert_opencv_img_to_pygame(subtract_img)
 
-
-def print_all_differents():
-    for dif in differents:
-        trans_rect = get_transform_range(
-            dif, IMAGE_WIDTH, PADDING)
-        pygame.draw.rect(screen, COLOR_RED,
-                         pygame.Rect(dif),  2)
-        pygame.draw.rect(screen, COLOR_RED,
-                         pygame.Rect(trans_rect),  2)
-
-    pygame.display.flip()
-
-
-def draw_subtract_images():
-    screen.blit(img_sub_screen, (0, 0))
-    screen.blit(img_sub_screen, (IMAGE_WIDTH + PADDING, 0))
-    pygame.display.flip()
-
-
-def draw_images():
-    screen.blit(img1_screen, (0, 0))
-    screen.blit(img2_screen, (IMAGE_WIDTH + PADDING, 0))
-    pygame.display.flip()
+img_candy_screen = convert_candy(candy_img)
+img_candy_screen = covert_opencv_img_to_pygame(img_candy_screen)
+img_modify_candy_screen = covert_opencv_img_to_pygame(
+    convert_candy(trans_candy_img))
 
 
 def draw_true(range1, range2):
@@ -73,6 +94,27 @@ def draw_true(range1, range2):
                      pygame.Rect(range1),  2)
     pygame.draw.rect(screen, COLOR_RED,
                      pygame.Rect(range2),  2)
+    pygame.display.flip()
+
+
+def draw_pixels(pixels, color=COLOR_RED):
+    square = pygame.Surface((1, 1))
+    square.fill(color)
+    for pixel in pixels:
+        x, y = pixel
+        screen.blit(square, pygame.Rect(x, y, 1, 1))
+    pygame.display.flip()
+
+
+def draw_subtract_images():
+    screen.blit(img_candy_screen, (0, 0))
+    screen.blit(img_modify_candy_screen, (IMAGE_WIDTH + PADDING, 0))
+    pygame.display.flip()
+
+
+def draw_images():
+    screen.blit(img1_screen, (0, 0))
+    screen.blit(img2_screen, (IMAGE_WIDTH + PADDING, 0))
     pygame.display.flip()
 
 
@@ -91,10 +133,26 @@ def draw_fail_ranges(fail_ranges):
 
 
 def draw_true_ranges(true_ranges):
-    for range in true_ranges:
-        trans_range = get_transform_range(
-            range, IMAGE_WIDTH, PADDING)
-        draw_true(range, trans_range)
+    style = level_setups[GAME_LEVEL]["diff_style"]
+    for region in true_ranges:
+        if style == "rect":
+            opencv_rect = region.get_rect()
+            y, x, height, width = opencv_rect
+            pygame_rect = (x, y, width, height)
+            trans_rect = get_transform_range(
+                pygame_rect, IMAGE_WIDTH, PADDING)
+            draw_true(pygame_rect, trans_rect)
+        if style == "edges":
+            points = region.get_edges()
+            origin_pixels = [point[::-1] for point in points]
+            trans_pixels = [get_trans_pos(
+                point[::-1], IMAGE_WIDTH, PADDING) for point in points]
+            draw_pixels(origin_pixels)
+            draw_pixels(trans_pixels)
+
+
+def print_all_differences():
+    draw_true_ranges(diff_regions)
 
 
 #
@@ -103,7 +161,7 @@ fail_ranges = []
 
 
 draw_images()
-# print_all_differents()
+# print_all_differences()
 
 
 # Timer for redraw scene
@@ -112,7 +170,7 @@ clock = pygame.time.Clock()
 
 # Game status
 status = {
-    "Total Different": len(differents),
+    "Total Different": len(diff_regions),
     "Total Fail": 0,
     "Total True": 0,
     "IsChanged": False,
@@ -181,7 +239,7 @@ while running:
         draw_true_ranges(true_ranges)
         status["IsChanged"] = False
         if status["IsPrintDifferent"]:
-            print_all_differents()
+            print_all_differences()
         if status["Logs"]:
             print(status)
         draw_mid()
@@ -214,13 +272,14 @@ while running:
                 continue
 
             trans_pos = get_trans_pos(origin_pos, IMAGE_WIDTH, PADDING)
-            range_clicked = get_clicked_range(differents, origin_pos)
-            if range_clicked is not None:
-                ssim_score, _ = calc_ssim(
-                    img1, img2, range_clicked)
-                print(ssim_score)
-                if not is_choosed_range(true_ranges, origin_pos):
-                    true_ranges.append(range_clicked)
+            region_clicked = get_clicked_regions(
+                diff_regions, origin_pos, strict_mode=False)
+            if region_clicked is not None:
+                # ssim_score, _ = calc_ssim(
+                #     img1, img2, range_clicked)
+                # print(ssim_score)
+                if region_clicked not in true_ranges:
+                    true_ranges.append(region_clicked)
                     status["Total True"] += 1
                     status["IsChanged"] = True
             else:

@@ -1,6 +1,10 @@
+'''
+    This level detect edges by Candy algorithm and change color edges in a rect 
+'''
+
 import random
 import cv2
-from generate.untils import *
+from utils.task1_tools import *
 import numpy
 
 
@@ -33,12 +37,12 @@ def replace_color(edges, origin_img, start_pos):
 # This level contain edge detection algorithm
 
 
-def lv3_generate(opencv_img, num_range):
+def change_edges_color(opencv_img, num_range):
     shape = opencv_img.shape
     width, height = shape[1], shape[0]
     points = generate_rally(100, width - 50, height - 50, num_range)
     g_img = opencv_img.copy()
-    diff_rects = []
+    # diff_rects = []
     for i in range(num_range):
         x, y = points[i]
         range_width = random.randint(40, 50)
@@ -52,5 +56,5 @@ def lv3_generate(opencv_img, num_range):
 
         edges = replace_color(edges, g_img, (x, y))
         g_img = replace_range(g_img, edges, (y, x))
-        diff_rects.append((x, y, range_width, range_height))
-    return g_img, diff_rects
+        # diff_rects.append((x, y, range_width, range_height))
+    return g_img

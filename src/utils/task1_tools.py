@@ -1,7 +1,9 @@
 import random
 import numpy as np
-from setup.constrants import *
-from untils.diff_rects import *
+from setup.constants import *
+from utils.diff_rects import *
+import numpy
+import cv2
 
 
 def rand_poses(max_x, max_y, count):
@@ -22,6 +24,18 @@ def replace_range(origin_img, range_r, start_pos):
         for y in range(start_y, start_y + range_y):
             origin_img[x][y] = range_r[x - start_x][y - start_y]
     return origin_img
+
+
+def similar_color_change(origin_img, rect, start_pos):
+    start_x, start_y = start_pos
+    range_x = rect.shape[0]
+    range_y = rect.shape[1]
+    # print(start_x, start_y, range_x, range_y)
+    for x in range(start_x, start_x + range_x):
+        for y in range(start_y, start_y + range_y):
+            rect[x - start_x][y - start_y] = origin_img[x][y] + \
+                numpy.array([1, 1, 1])
+    return rect
 
 
 def square_distance(point1, point2):
@@ -59,3 +73,34 @@ def rand_color():
     x2 = random.randint(0, 256)
     x3 = random.randint(0, 256)
     return x1, x2, x3
+
+
+def erode_edge(opencv_img, kernel=(5, 5), iterations=1):
+    kernel = np.ones(kernel, np.uint8)
+    erosion = cv2.erode(opencv_img, kernel, iterations)
+    return erosion
+
+
+def dilate_edge(opencv_img, kernel=(5, 5), iterations=1):
+    kernel = np.ones(kernel, np.uint8)
+    erosion = cv2.dilate(opencv_img, kernel, iterations)
+    return erosion
+
+
+def open_edge(opencv_img, kernel=(5, 5)):
+    kernel = np.ones(kernel, np.uint8)
+    opening = cv2.morphologyEx(opencv_img, cv2.MORPH_OPEN, kernel)
+    return opening
+
+
+def close_edge(opencv_img, kernel=(5, 5)):
+    kernel = np.ones(kernel, np.uint8)
+    closing = cv2.morphologyEx(opencv_img, cv2.MORPH_CLOSE, kernel)
+    return closing
+
+
+def transform_candy(candy_img):
+    modify_img = dilate_edge(candy_img, kernel=(2, 2))
+    modify_img = close_edge(modify_img, kernel=(2, 2))
+    modify_img = erode_edge(modify_img, kernel=(2, 2))
+    return modify_img

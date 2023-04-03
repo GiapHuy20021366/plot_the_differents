@@ -1,4 +1,6 @@
 import pygame
+import numpy as np
+from utils.region import Region
 
 
 def get_click_pos_origin(pos_click, img_width, padding):
@@ -35,6 +37,15 @@ def get_clicked_range(ranges, pos_clicked):
     return None
 
 
+def get_clicked_regions(regions, pos_clicked, strict_mode=True):
+    for region in regions:
+        if strict_mode and region.is_inside(pos_clicked[::-1]):
+            return region
+        if not strict_mode and Region.point_in_rect(pos_clicked[::-1], region.get_rect()):
+            return region
+    return None
+
+
 def get_transform_range(range, width, padding):
     x, y, w, h = range
     return x + width + padding, y, w, h
@@ -53,3 +64,14 @@ def covert_opencv_img_to_pygame(opencv_img):
 
 def is_choosed_range(choosed_ranges, pos_click):
     return get_clicked_range(choosed_ranges, pos_click) is not None
+
+
+def convert_candy(candy_img):
+    rows, cols = candy_img.shape
+    img = np.zeros((rows, cols, 3), dtype=np.uint8)
+    img = 0*img
+    for row in range(rows):
+        for col in range(cols):
+            if candy_img[row][col] == 255:
+                img[row][col] = (255, 255, 255)
+    return img
